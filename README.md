@@ -1,1 +1,592 @@
-# bep20
+Solidez do pragma 0,5,16;
+
+interface IBEP20 {
+  /**
+   * @dev Retorna a quantidade de tokens existentes.
+   */
+  a função totalSupply() retorna a visão externa (uint256);
+
+  /**
+   * @dev Retorna os decimais do token.
+   */
+  função decimais() visão externa retorna (uint8);
+
+  /**
+   * @dev Retorna o símbolo do token.
+   */
+  function symbol() retorna a visão externa (memória de string);
+
+  /**
+  * @dev Retorna o nome do token.
+  */
+  função name() visão externa retorna (memória de string);
+
+  /**
+   * @dev Retorna o proprietário do token bep.
+   */
+  função getOwner() visão externa retorna (endereço);
+
+  /**
+   * @dev Retorna a quantidade de tokens de propriedade de `account`.
+   */
+  função balanceOf(endereço conta) exibição externa retorna (uint256);
+
+  /**
+   * @dev Move tokens `amount` da conta do chamador para `recipient`.
+   *
+   * Retorna um valor booleano indicando se a operação foi bem-sucedida.
+   *
+   * Emite um evento {Transfer}.
+   */
+  função transfer(endereço do destinatário, valor uint256) retornos externos (bool);
+
+  /**
+   * @dev Retorna o número restante de tokens que o `spender` será
+   * permitido gastar em nome do `proprietário` por meio de {transferFrom}. Isto é
+   * zero por padrão.
+   *
+   * Este valor muda quando {approve} ou {transferFrom} são chamados.
+   */
+  função subsídio(endereço _proprietário, endereço do gastador) visão externa retorna (uint256);
+
+  /**
+   * @dev Define `amount` como a permissão de `spender` sobre os tokens do chamador.
+   *
+   * Retorna um valor booleano indicando se a operação foi bem-sucedida.
+   *
+   * IMPORTANTE: Cuidado que alterar uma provisão com este método traz o risco
+   * que alguém pode usar tanto o subsídio antigo quanto o novo por infelizes
+   * ordenação de transações. Uma possível solução para mitigar essa corrida
+   * condição é primeiro reduzir o subsídio do gastador para 0 e definir o
+   * valor desejado depois:
+   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+   *
+   * Emite um evento {Approval}.
+   */
+  função aprovar(endereço gastador, valor uint256) retornos externos (bool);
+
+  /**
+   * @dev Move tokens `amount` de `sender` para `recipient` usando o
+   * mecanismo de subsídio. `amount` é então deduzido do valor do chamador
+   * mesada.
+   *
+   * Retorna um valor booleano indicando se a operação foi bem-sucedida.
+   *
+   * Emite um evento {Transfer}.
+   */
+  função transferFrom(endereço remetente, endereço destinatário, valor uint256) retornos externos (bool);
+
+  /**
+   * @dev Emitido quando tokens `value` são movidos de uma conta (`from`) para
+   * outro (`para`).
+   *
+   * Observe que `value` pode ser zero.
+   */
+  event Transfer(endereço indexado de, endereço indexado a, valor uint256);
+
+  /**
+   * @dev Emitido quando a permissão de um `gastador` para um `proprietário` é definida por
+   * uma chamada para {approve}. `value` é o novo subsídio.
+   */
+  Aprovação do evento (proprietário indexado de endereço, gastador indexado de endereço, valor uint256);
+}
+
+/*
+* @dev Fornece informações sobre o contexto de execução atual, incluindo o
+* remetente da transação e seus dados. Embora estes estejam geralmente disponíveis
+* via msg.sender e msg.data, eles não devem ser acessados ​​de forma tão direta
+* forma, uma vez que ao lidar com meta-transações GSN a conta que envia e
+* pagando pela execução pode não ser o remetente real (na medida em que um aplicativo
+* está preocupado).
+*
+* Este contrato é necessário apenas para contratos intermediários do tipo biblioteca.
+*/
+Contrato Contexto {
+  // Construtor interno vazio, para evitar que as pessoas implementem erroneamente
+  // uma instância deste contrato, que deve ser usada via herança.
+  construtor () interno {}
+
+  function _msgSender() exibição interna retorna (endereço a pagar) {
+    return msg.remetente;
+  }
+
+  função _msgData() visão interna retorna (memória de bytes) {
+    esta; // silencia o aviso de mutabilidade do estado sem gerar bytecode - veja https://github.com/ethereum/solidity/issues/2691
+    return msg.data;
+  }
+}
+
+/**
+* @dev Wrappers sobre as operações aritméticas do Solidity com estouro adicional
+* Verificações.
+*
+* Operações aritméticas no Solidity quebram no estouro. Isso pode resultar facilmente
+* em bugs, porque os programadores geralmente assumem que um estouro gera um
+* erro, que é o comportamento padrão em linguagens de programação de alto nível.
+* `SafeMath` restaura essa intuição revertendo a transação quando um
+* operação transborda.
+*
+* Usar esta biblioteca em vez das operações desmarcadas elimina todo um
+* classe de bugs, por isso é recomendável usá-lo sempre.
+*/
+biblioteca SafeMath {
+  /**
+   * @dev Retorna a adição de dois inteiros sem sinal, revertendo em
+   * transbordar.
+   *
+   * Contraparte ao operador `+` do Solidity.
+   *
+   * Requisitos:
+   * - Adição não pode transbordar.
+   */
+  function add(uint256 a, uint256 b) retornos puros internos (uint256) {
+    uint256 c = a + b;
+    require(c >= a, "SafeMath: estouro de adição");
+
+    retornar c;
+  }
+
+  /**
+   * @dev Retorna a subtração de dois inteiros sem sinal, revertendo em
+   * estouro (quando o resultado é negativo).
+   *
+   * Contraparte ao operador `-` do Solidity.
+   *
+   * Requisitos:
+   * - A subtração não pode transbordar.
+   */
+  function sub(uint256 a, uint256 b) retornos puros internos (uint256) {
+    return sub(a, b, "SafeMath: estouro de subtração");
+  }
+
+  /**
+   * @dev Retorna a subtração de dois inteiros sem sinal, revertendo com mensagem personalizada ativada
+   * estouro (quando o resultado é negativo).
+   *
+   * Contraparte ao operador `-` do Solidity.
+   *
+   * Requisitos:
+   * - A subtração não pode transbordar.
+   */
+  function sub(uint256 a, uint256 b, string memory errorMessage) internal pure return (uint256) {
+    require(b <= a, mensagem de erro);
+    uint256 c = a - b;
+
+    retornar c;
+  }
+
+  /**
+   * @dev Retorna a multiplicação de dois inteiros sem sinal, revertendo em
+   * transbordar.
+   *
+   * Contraparte ao operador `*` do Solidity.
+   *
+   * Requisitos:
+   * - A multiplicação não pode transbordar.
+   */
+  function mul(uint256 a, uint256 b) retornos puros internos (uint256) {
+    // Otimização de gás: isso é mais barato do que exigir que 'a' não seja zero, mas o
+    // o benefício é perdido se 'b' também for testado.
+    // Veja: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+    if (a == 0) {
+      retornar 0;
+    }
+
+    uint256 c = a * b;
+    require(c/a == b, "SafeMath: estouro de multiplicação");
+
+    retornar c;
+  }
+
+  /**
+   * @dev Retorna a divisão inteira de dois inteiros sem sinal. Reverte em
+   * divisão por zero. O resultado é arredondado para zero.
+   *
+   * Contraparte ao operador `/` do Solidity. Nota: esta função usa um
+   * opcode `revert` (que deixa o gás restante intocado) enquanto Solidity
+   * usa um opcode inválido para reverter (consumindo todo o gás restante).
+   *
+   * Requisitos:
+   * - O divisor não pode ser zero.
+   */
+  function div(uint256 a, uint256 b) retornos puros internos (uint256) {
+    return div(a, b, "SafeMath: divisão por zero");
+  }
+
+  /**
+   * @dev Retorna a divisão inteira de dois inteiros sem sinal. Reverte com mensagem personalizada ativada
+   * divisão por zero. O resultado é arredondado para zero.
+   *
+   * Contraparte ao operador `/` do Solidity. Nota: esta função usa um
+   * opcode `revert` (que deixa o gás restante intocado) enquanto Solidity
+   * usa um opcode inválido para reverter (consumindo todo o gás restante).
+   *
+   * Requisitos:
+   * - O divisor não pode ser zero.
+   */
+  function div(uint256 a, uint256 b, string memory errorMessage) internal pure return (uint256) {
+    // Solidity só é afirmado automaticamente ao dividir por 0
+    require(b > 0, mensagem de erro);
+    uint256 c = a / b;
+    // assert(a == b * c + a % b); // Não há nenhum caso em que isso não seja válido
+
+    retornar c;
+  }
+
+  /**
+   * @dev Retorna o resto da divisão de dois inteiros sem sinal. (módulo inteiro sem sinal),
+   * Reverte ao dividir por zero.
+   *
+   * Contraparte ao operador `%` do Solidity. Esta função usa um `revert`
+   * opcode (que deixa o gás restante intocado) enquanto Solidity usa um
+   * opcode inválido para reverter (consumindo todo o gás restante).
+   *
+   * Requisitos:
+   * - O divisor não pode ser zero.
+   */
+  function mod(uint256 a, uint256 b) retornos puros internos (uint256) {
+    return mod(a, b, "SafeMath: módulo por zero");
+  }
+
+  /**
+   * @dev Retorna o resto da divisão de dois inteiros sem sinal. (módulo inteiro sem sinal),
+   * Reverte com mensagem personalizada ao dividir por zero.
+   *
+   * Contraparte ao operador `%` do Solidity. Esta função usa um `revert`
+   * opcode (que deixa o gás restante intocado) enquanto Solidity usa um
+   * opcode inválido para reverter (consumindo todo o gás restante).
+   *
+   * Requisitos:
+   * - O divisor não pode ser zero.
+   */
+  function mod(uint256 a, uint256 b, string memory errorMessage) internal pure return (uint256) {
+    require(b != 0, errorMessage);
+    retornar a % b;
+  }
+}
+
+/**
+* @dev Módulo de contrato que fornece um mecanismo básico de controle de acesso, onde
+* existe uma conta (um proprietário) que pode ter acesso exclusivo a
+* funções específicas.
+*
+* Por padrão, a conta do proprietário será aquela que implanta o contrato. este
+* pode ser alterado posteriormente com {transferOwnership}.
+*
+* Este módulo é usado por herança. Ele disponibilizará o modificador
+* `onlyOwner`, que pode ser aplicado às suas funções para restringir seu uso a
+* o dono.
+*/
+contrato Proprietário é Contexto {
+  endereço _proprietário privado;
+
+  evento OwnershipTransferred(endereço indexado anteriorOwner, endereço indexado newOwner);
+
+  /**
+   * @dev Inicializa o contrato definindo o implantador como o proprietário inicial.
+   */
+  construtor () interno {
+    endereço msgSender = _msgSender();
+    _proprietário = msgRemetente;
+    emit OwnershipTransferred(endereço(0), msgSender);
+  }
+
+  /**
+   * @dev Retorna o endereço do proprietário atual.
+   */
+  função proprietário() visão pública retorna (endereço) {
+    retornar _proprietário;
+  }
+
+  /**
+   * @dev Lança se chamado por qualquer conta que não seja o proprietário.
+   */
+  modificador onlyOwner() {
+    require(_owner == _msgSender(), "Proprietário: o chamador não é o proprietário");
+    _;
+  }
+
+  /**
+   * @dev Deixa o contrato sem dono. Não será possível ligar
+   * `onlyOwner` funciona mais. Só pode ser chamado pelo proprietário atual.
+   *
+   * NOTA: A renúncia à propriedade deixará o contrato sem proprietário,
+   * removendo assim qualquer funcionalidade que esteja disponível apenas para o proprietário.
+   */
+  function renounceOwnership() public onlyOwner {
+    emit OwnershipTransferred(_owner, address(0));
+    _proprietário = endereço(0);
+  }
+
+  /**
+   * @dev Transfere a propriedade do contrato para uma nova conta (`newOwner`).
+   * Só pode ser chamado pelo proprietário atual.
+   */
+  função transferOwnership(endereço novoOwner) public onlyOwner {
+    _transferOwnership(newOwner);
+  }
+
+  /**
+   * @dev Transfere a propriedade do contrato para uma nova conta (`newOwner`).
+   */
+  function _transferOwnership(endereço newOwner) interno {
+    require(newOwner != address(0), "Proprietário: novo proprietário é o endereço zero");
+    emit OwnershipTransferred(_owner, newOwner);
+    _proprietário = novoProprietário;
+  }
+}
+
+contrato BEP20Token é Contexto, IBEP20, Próprio {
+  usando SafeMath para uint256;
+
+  mapeamento (endereço => uint256) private _balances;
+
+  mapeamento (endereço => mapeamento (endereço => uint256)) private _allowances;
+
+  uint256 private _totalSupply;
+  uint8 private _decimals;
+  string private _symbol;
+  string private _name;
+
+  construtor() public{
+    _name = {{TOKEN_NAME}};
+    _symbol = {{TOKEN_SYMBOL}};
+    _decimais = {{DECIMALS}};
+    _totalSupply = {{TOTAL_SUPPLY}};
+    _balances[msg.sender] = _totalSupply;
+
+    emit Transfer(endereço(0), msg.sender, _totalSupply);
+  }
+
+  /**
+   * @dev Retorna o proprietário do token bep.
+   */
+  função getOwner() visão externa retorna (endereço) {
+    retorna dono();
+  }
+
+  /**
+   * @dev Retorna os decimais do token.
+   */
+  function decimals() visão externa retorna (uint8) {
+    return _decimais;
+  }
+
+  /**
+   * @dev Retorna o símbolo do token.
+   */
+  function symbol() visão externa retorna (memória de string) {
+    return _symbol;
+  }
+
+  /**
+  * @dev Retorna o nome do token.
+  */
+  function name() visão externa retorna (memória de string) {
+    return _name;
+  }
+
+  /**
+   * @dev Consulte {BEP20-totalSupply}.
+   */
+  função totalSupply() visão externa retorna (uint256) {
+    return _totalSupply;
+  }
+
+  /**
+   * @dev Consulte {BEP20-balanceOf}.
+   */
+  função balanceOf(endereço conta) visão externa retorna (uint256) {
+    return _balances[conta];
+  }
+
+  /**
+   * @dev Consulte {BEP20-transfer}.
+   *
+   * Requisitos:
+   *
+   * - `recipient` não pode ser o endereço zero.
+   * - o chamador deve ter um saldo de pelo menos `quantia`.
+   */
+  function transfer(endereço do destinatário, valor uint256) external return (bool) {
+    _transfer(_msgSender(), destinatário, valor);
+    retorne verdadeiro;
+  }
+
+  /**
+   * @dev Veja {BEP20-allowance}.
+   */
+  função subsídio (proprietário do endereço, usuário do endereço) visão externa retorna (uint256) {
+    return _allowances[proprietário][gastador];
+  }
+
+  /**
+   * @dev Consulte {BEP20-aprovar}.
+   *
+   * Requisitos:
+   *
+   * - `spender` não pode ser o endereço zero.
+   */
+  função aprovar(endereço gastador, valor uint256) retornos externos (bool) {
+    _approve(_msgSender(), gastador, valor);
+    retorne verdadeiro;
+  }
+
+  /**
+   * @dev Consulte {BEP20-transferFrom}.
+   *
+   * Emite um evento {Approval} indicando a franquia atualizada. Isso não é
+   * exigido pelo EIP. Veja a nota no início de {BEP20};
+   *
+   * Requisitos:
+   * - `remetente` e `destinatário` não podem ser o endereço zero.
+   * - `sender` deve ter um saldo de pelo menos `amount`.
+   * - o chamador deve ter permissão para tokens do remetente de pelo menos
+   * `quantidade`.
+   */
+  function transferFrom(endereço remetente, endereço destinatário, valor uint256) external return (bool) {
+    _transfer(remetente, destinatário, valor);
+    _approve(remetente, _msgSender(), _allowances[remetente][_msgSender()].sub(amount, "BEP20: valor da transferência excede o limite"));
+    retorne verdadeiro;
+  }
+
+  /**
+   * @dev Aumenta atomicamente a permissão concedida ao `spender` pelo chamador.
+   *
+   * Esta é uma alternativa para {approve} que pode ser usada como mitigação para
+   * problemas descritos em {BEP20-approve}.
+   *
+   * Emite um evento {Approval} indicando a franquia atualizada.
+   *
+   * Requisitos:
+   *
+   * - `spender` não pode ser o endereço zero.
+   */
+  function raiseAllowance(endereço do gastador, uint256 AddedValue) public return (bool) {
+    _approve(_msgSender(), gastador, _allowances[_msgSender()][spender].add(addedValue));
+    retorne verdadeiro;
+  }
+
+  /**
+   * @dev Diminui atomicamente a permissão concedida ao `spender` pelo chamador.
+   *
+   * Esta é uma alternativa para {approve} que pode ser usada como mitigação para
+   * problemas descritos em {BEP20-approve}.
+   *
+   * Emite um evento {Approval} indicando a franquia atualizada.
+   *
+   * Requisitos:
+   *
+   * - `spender` não pode ser o endereço zero.
+   * - `spender` deve ter permissão para o chamador de pelo menos
+   * `subtractedValue`.
+   */
+  function reduçãoAllowance(endereço do gastador, uint256 subtraídoValue) public return (bool) {
+    _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue, "BEP20: subsídio reduzido abaixo de zero"));
+    retorne verdadeiro;
+  }
+
+  /**
+   * @dev Cria tokens `amount` e os atribui a `msg.sender`, aumentando
+   * a oferta total.
+   *
+   * Requisitos
+   *
+   * - `msg.sender` deve ser o proprietário do token
+   */
+  function mint(uint256 quantidade) public onlyOwner return (bool) {
+    _mint(_msgSender(), quantidade);
+    retorne verdadeiro;
+  }
+
+  /**
+   * @dev Move tokens `amount` de `sender` para `recipient`.
+   *
+   * Esta função interna é equivalente a {transfer}, e pode ser usada para
+   * por exemplo, implementar taxas automáticas de token, mecanismos de corte, etc.
+   *
+   * Emite um evento {Transfer}.
+   *
+   * Requisitos:
+   *
+   * - `sender` não pode ser o endereço zero.
+   * - `recipient` não pode ser o endereço zero.
+   * - `sender` deve ter um saldo de pelo menos `amount`.
+   */
+  function _transfer(endereço do remetente, endereço do destinatário, valor uint256) internal {
+    require(remetente != endereço(0), "BEP20: transferência do endereço zero");
+    require(destinatário != endereço(0), "BEP20: transferir para o endereço zero");
+
+    _balances[remetente] = _balances[remetente].sub(valor, "BEP20: valor da transferência excede o saldo");
+    _balances[destinatário] = _balances[destinatário].add(valor);
+    emitir Transferência (remetente, destinatário, valor);
+  }
+
+  /** @dev Cria tokens `amount` e os atribui a `account`, aumentando
+   * a oferta total.
+   *
+   * Emite um evento {Transfer} com `from` definido para o endereço zero.
+   *
+   * Requisitos
+   *
+   * - `to` não pode ser o endereço zero.
+   */
+  function _mint(endereço da conta, valor uint256) internal {
+    require(conta != endereço(0), "BEP20: mint para o endereço zero");
+
+    _totalSupply = _totalSupply.add(quantidade);
+    _balances[conta] = _balances[conta].add(valor);
+    emitir Transferência(endereço(0), conta, valor);
+  }
+
+  /**
+   * @dev Destrói tokens `amount` de `account`, reduzindo o
+   * oferta total.
+   *
+   * Emite um evento {Transfer} com `to` definido para o endereço zero.
+   *
+   * Requisitos
+   *
+   * - `account` não pode ser o endereço zero.
+   * - `account` deve ter pelo menos tokens `amount`.
+   */
+  function _burn(endereço da conta, valor uint256) internal {
+    require(conta != endereço(0), "BEP20: gravar a partir do endereço zero");
+
+    _balances[account] = _balances[account].sub(amount, "BEP20: o valor da queima excede o saldo");
+    _totalSupply = _totalSupply.sub(quantidade);
+    emitir Transferência(conta, endereço(0), valor);
+  }
+
+  /**
+   * @dev Define `amount` como a permissão do `spender` sobre os tokens do `owner`.
+   *
+   * Esta função interna é equivalente a `approve`, e pode ser usada para
+   * por exemplo, definir permissões automáticas para determinados subsistemas, etc.
+   *
+   * Emite um evento {Approval}.
+   *
+   * Requisitos:
+   *
+   * - `owner` não pode ser o endereço zero.
+   * - `spender` não pode ser o endereço zero.
+   */
+  function _approve(proprietário do endereço, gastador do endereço, valor uint256) interno {
+    require(proprietário != endereço(0), "BEP20: aprovar do endereço zero");
+    require(spender != address(0), "BEP20: aprovar para o endereço zero");
+
+    _allowances[proprietário][gastador] = valor;
+    emitir Aprovação(proprietário, gastador, valor);
+  }
+
+  /**
+   * @dev Destrói tokens `amount` de `account`.`amount` é então deduzido
+   * do subsídio do chamador.
+   *
+   * Consulte {_burn} e {_approve}.
+   */
+  function _burnFrom(endereço da conta, valor uint256) internal {
+    _burn(conta, valor);
+    _approve(account, _msgSender(), _allowances[account][_msgSender()].sub(amount, "BEP20: o valor da queima excede o limite"));
+  }
+}
